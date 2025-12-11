@@ -23,8 +23,8 @@ FetchContent_MakeAvailable(JUCE)
 
 # Plugin Configuration
 juce_add_plugin(Knobula
-    COMPANY_NAME "Knobula Audio"
-    BUNDLE_ID "com.knobulaaudio.knobula"
+    COMPANY_NAME "SeshNx"
+    BUNDLE_ID "com.seshnx.knobula"
     PLUGIN_MANUFACTURER_CODE Knob
     PLUGIN_CODE Knob
     FORMATS VST3 AU Standalone
