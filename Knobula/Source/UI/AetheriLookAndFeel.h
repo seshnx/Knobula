@@ -1,25 +1,27 @@
 /*
   ==============================================================================
-    Knobula - High-Fidelity Mastering EQ
-    KnobulaLookAndFeel - Vintage Analog Hardware Theme
+    Aetheri - High-Fidelity Mastering EQ
+    AetheriLookAndFeel - Vintage Analog Hardware Theme
   ==============================================================================
 */
 
 #pragma once
-#include <JuceHeader.h>
+#include <juce_gui_basics/juce_gui_basics.h>
+#include <juce_graphics/juce_graphics.h>
+#include <juce_core/juce_core.h>
 #include "ColorPalette.h"
 
-namespace Knobula
+namespace Aetheri
 {
     /**
-     * Custom LookAndFeel for the Knobula plugin
+     * Custom LookAndFeel for the Aetheri plugin
      * Vintage analog hardware aesthetic with Sci-Fi undertones
      */
-    class KnobulaLookAndFeel : public juce::LookAndFeel_V4
+    class AetheriLookAndFeel : public juce::LookAndFeel_V4
     {
     public:
-        KnobulaLookAndFeel();
-        ~KnobulaLookAndFeel() override = default;
+        AetheriLookAndFeel();
+        ~AetheriLookAndFeel() override = default;
         
         // Slider/Knob drawing
         void drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
@@ -63,6 +65,6 @@ namespace Knobula
         juce::Font labelFont;
         juce::Font valueFont;
         
-        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(KnobulaLookAndFeel)
+        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AetheriLookAndFeel)
     };
 }

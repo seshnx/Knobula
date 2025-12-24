@@ -10,9 +10,11 @@
 */
 
 #pragma once
-#include <JuceHeader.h>
+#include <juce_audio_basics/juce_audio_basics.h>
+#include <juce_dsp/juce_dsp.h>
+#include <juce_core/juce_core.h>
 
-namespace Knobula
+namespace Aetheri
 {
     /**
      * Analog Hysteresis Stage

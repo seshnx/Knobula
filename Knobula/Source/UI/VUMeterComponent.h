@@ -6,14 +6,18 @@
 */
 
 #pragma once
-#include <JuceHeader.h>
+#include <juce_gui_basics/juce_gui_basics.h>
+#include <juce_graphics/juce_graphics.h>
+#include <juce_core/juce_core.h>
 #include "ColorPalette.h"
-#include "VUMeter.h"
+#include "../DSP/VUMeter.h"
 
-namespace Knobula
+namespace Aetheri
 {
     /**
-     * Single VU Meter display (vintage needle-style)
+     * Professional LED-style multi-mode level meter
+     * Vertical bar with color-coded segments (green/yellow/red)
+     * Supports RMS, Peak, VU, and LUFS modes
      */
     class VUMeterComponent : public juce::Component,
                              public juce::Timer
@@ -29,24 +33,30 @@ namespace Knobula
         void setLevel(float normalizedLevel);
         void setPeakLevel(float normalizedPeak);
         void setLabel(const juce::String& newLabel) { label = newLabel; repaint(); }
+        void setMode(MeterMode mode) { meterMode = mode; repaint(); }
+        MeterMode getMode() const { return meterMode; }
         
     private:
         juce::String label;
+        MeterMode meterMode = MeterMode::RMS;
         
         float currentLevel = 0.0f;
         float targetLevel = 0.0f;
         float peakLevel = 0.0f;
         
-        // Needle animation
-        float needleAngle = 0.0f;
-        float needleVelocity = 0.0f;
+        // Smooth level for display
+        float smoothedLevel = 0.0f;
+        float smoothedPeak = 0.0f;
+        
+        static constexpr int NUM_SEGMENTS = 30;  // Number of LED segments
+        static constexpr float GREEN_THRESHOLD = 0.6f;   // Green up to 60%
+        static constexpr float YELLOW_THRESHOLD = 0.85f; // Yellow up to 85%
+        // Red above 85%
         
         void drawMeterBackground(juce::Graphics& g, juce::Rectangle<float> bounds);
-        void drawNeedle(juce::Graphics& g, juce::Rectangle<float> bounds);
+        void drawLEDSegments(juce::Graphics& g, juce::Rectangle<float> bounds);
         void drawScale(juce::Graphics& g, juce::Rectangle<float> bounds);
-        
-        static constexpr float MIN_ANGLE = -0.4f * juce::MathConstants<float>::pi;
-        static constexpr float MAX_ANGLE = 0.4f * juce::MathConstants<float>::pi;
+        juce::String getModeLabel() const;
         
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(VUMeterComponent)
     };
@@ -65,6 +75,8 @@ namespace Knobula
         
         void setLevels(float leftLevel, float rightLevel);
         void setPeakLevels(float leftPeak, float rightPeak);
+        void setMode(MeterMode mode);
+        MeterMode getMode() const { return leftMeter.getMode(); }
         
         VUMeterComponent& getLeft() { return leftMeter; }
         VUMeterComponent& getRight() { return rightMeter; }
@@ -73,6 +85,9 @@ namespace Knobula
         juce::String title;
         VUMeterComponent leftMeter;
         VUMeterComponent rightMeter;
+        juce::ComboBox modeSelector;
+        
+        void modeChanged();
         
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(StereoVUMeterComponent)
     };

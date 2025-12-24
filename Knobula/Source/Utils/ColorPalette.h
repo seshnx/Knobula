@@ -1,14 +1,16 @@
 /*
   ==============================================================================
-    Knobula - High-Fidelity Mastering EQ
+    Aetheri - High-Fidelity Mastering EQ
     Color Palette - Analog Nebula Theme
   ==============================================================================
 */
 
 #pragma once
-#include <JuceHeader.h>
+#include <juce_graphics/juce_graphics.h>
+#include <juce_core/juce_core.h>
 
-namespace Knobula
+// Core colour namespace
+namespace Aetheri
 {
     namespace Colors
     {

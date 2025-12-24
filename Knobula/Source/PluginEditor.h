@@ -1,6 +1,6 @@
 /*
   ==============================================================================
-    Knobula - High-Fidelity Dual-Channel Mastering EQ
+    Aetheri - High-Fidelity Dual-Channel Mastering EQ
     PluginEditor - Main UI with Analog Nebula Theme
     
     Features:
@@ -13,63 +13,91 @@
 */
 
 #pragma once
-#include <JuceHeader.h>
+#include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_gui_basics/juce_gui_basics.h>
+#include <juce_core/juce_core.h>
 #include "PluginProcessor.h"
-#include "UI/KnobulaLookAndFeel.h"
+#include "UI/AetheriLookAndFeel.h"
 #include "UI/NebulaVisualizer.h"
 #include "UI/VUMeterComponent.h"
 #include "UI/BandControl.h"
 #include "UI/HysteresisPanel.h"
 #include "UI/TubeGlowEffect.h"
 #include "UI/AnalogKnob.h"
+#include "UI/PhaseCorrelationMeter.h"
 
-class KnobulaAudioProcessorEditor : public juce::AudioProcessorEditor,
-                                     public juce::Timer
+class AetheriAudioProcessorEditor : public juce::AudioProcessorEditor,
+                                     public juce::Timer,
+                                     public juce::ValueTree::Listener
 {
 public:
-    KnobulaAudioProcessorEditor(KnobulaAudioProcessor&);
-    ~KnobulaAudioProcessorEditor() override;
+    AetheriAudioProcessorEditor(AetheriAudioProcessor&);
+    ~AetheriAudioProcessorEditor() override;
 
     void paint(juce::Graphics&) override;
+    void paintOverChildren(juce::Graphics&) override;
     void resized() override;
     void timerCallback() override;
+    bool keyPressed(const juce::KeyPress& key) override;
 
 private:
-    KnobulaAudioProcessor& audioProcessor;
+    AetheriAudioProcessor& audioProcessor;
     
     // Custom look and feel
-    Knobula::KnobulaLookAndFeel lookAndFeel;
+    Aetheri::AetheriLookAndFeel lookAndFeel;
     
     // Background visualizer
-    Knobula::NebulaVisualizer nebulaVisualizer;
+    Aetheri::NebulaVisualizer nebulaVisualizer;
     
     // Tube glow overlay
-    Knobula::TubeGlowEffect tubeGlow;
+    Aetheri::TubeGlowEffect tubeGlow;
     
     // VU Meters
-    Knobula::StereoVUMeterComponent inputVU;
-    Knobula::StereoVUMeterComponent outputVU;
+    Aetheri::StereoVUMeterComponent inputVU;
+    Aetheri::StereoVUMeterComponent outputVU;
     
     // EQ Channel Strips (L/R or M/S)
-    Knobula::ChannelEQStrip leftChannelStrip;
-    Knobula::ChannelEQStrip rightChannelStrip;
+    Aetheri::ChannelEQStrip leftChannelStrip;
+    Aetheri::ChannelEQStrip rightChannelStrip;
     
     // Hysteresis Panel
-    Knobula::HysteresisPanel hysteresisPanel;
+    Aetheri::HysteresisPanel hysteresisPanel;
     
     // Global Controls
-    Knobula::AnalogKnob inputGainKnob;
-    Knobula::AnalogKnob outputTrimKnob;
+    Aetheri::AnalogKnob inputGainKnob;
+    Aetheri::AnalogKnob outputTrimKnob;
     
     // Filter Section
     juce::TextButton hpfButton;
     juce::TextButton lpfButton;
-    Knobula::AnalogKnob hpfFreqKnob;
-    Knobula::AnalogKnob lpfFreqKnob;
+    Aetheri::AnalogKnob hpfFreqKnob;
+    Aetheri::AnalogKnob lpfFreqKnob;
     
     // Stereo Mode / Link
     juce::ComboBox stereoModeSelector;
     juce::TextButton channelLinkButton;
+    
+    // Preset Management
+    juce::ComboBox presetSelector;
+    juce::TextButton savePresetButton;
+    juce::TextButton deletePresetButton;
+    juce::TextButton renamePresetButton;
+    juce::TextButton exportPresetButton;
+    juce::TextButton importPresetButton;
+    
+    // A/B Comparison
+    juce::TextButton abToggleButton;
+    
+    // Phase Correlation Meter
+    Aetheri::PhaseCorrelationMeter phaseCorrMeter;
+    
+    // Oversampling
+    juce::ComboBox oversamplingSelector;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> oversamplingAttachment;
+    
+    // Auto-gain compensation
+    juce::ToggleButton autoGainButton;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> autoGainAttachment;
     
     // Parameter attachments for global controls
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> inputGainAttachment;
@@ -84,19 +112,46 @@ private:
     // Layout helpers
     void setupGlobalControls();
     void setupFilterSection();
+    void setupPresetSelector();
     void updateChannelLabels();
     void updateVUMeters();
     void updateNebulaEnergies();
     void updateTubeGlow();
+    void updatePresetList();
+    void updateABButtonLabel();
+    void setupOversamplingControls();
+    void setupAutoGainControls();
+    
+    // ValueTree listener for parameter syncing
+    void valueTreePropertyChanged(juce::ValueTree& tree, const juce::Identifier& property) override;
+    
+    // Helper to sync knob visual position when linked
+    void syncKnobVisual(int band, int channel, const juce::String& paramType, float normalizedValue);
 
     // Resizing constraints
     juce::ComponentBoundsConstrainer constrainer;
     std::unique_ptr<juce::ResizableCornerComponent> resizer;
     
-    static constexpr int DEFAULT_WIDTH = 1000;
-    static constexpr int DEFAULT_HEIGHT = 600;
-    static constexpr int MIN_WIDTH = 800;
-    static constexpr int MIN_HEIGHT = 500;
+    static constexpr int DEFAULT_WIDTH = 1500;  // 25% wider (1200 * 1.25)
+    static constexpr int DEFAULT_HEIGHT = 650;
+    static constexpr int MIN_WIDTH = 1200;  // Scaled proportionally
+    static constexpr int MIN_HEIGHT = 520;  // Scaled proportionally
+    
+    // Version number - increment by 0.01 for each fix
+    static constexpr const char* PLUGIN_VERSION = "v00.13";
+    
+    // Aspect ratio for locked resizing
+    static constexpr double ASPECT_RATIO = static_cast<double>(DEFAULT_WIDTH) / DEFAULT_HEIGHT;
+    
+    // Base content size (for zoom scaling)
+    int baseContentWidth = DEFAULT_WIDTH;
+    int baseContentHeight = DEFAULT_HEIGHT;
+    
+    // Flag to prevent feedback loops in parameter linking
+    bool isLinkingParameters = false;
+    
+    // Company logo
+    juce::Image companyLogo;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(KnobulaAudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AetheriAudioProcessorEditor)
 };

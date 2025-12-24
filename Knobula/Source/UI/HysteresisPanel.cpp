@@ -7,7 +7,7 @@
 
 #include "HysteresisPanel.h"
 
-namespace Knobula
+namespace Aetheri
 {
     HysteresisPanel::HysteresisPanel()
         : tubeKnob("TUBE", AnalogKnob::KnobSize::Medium),
@@ -68,9 +68,9 @@ namespace Knobula
             
             juce::ColourGradient glow(
                 Colors::tubeGlowBright.withAlpha(alpha),
-                centre.x, centre.y,
+                juce::Point<float>(centre.x, centre.y),
                 Colors::tubeGlowOn.withAlpha(0.0f),
-                centre.x + radius, centre.y,
+                juce::Point<float>(centre.x + radius, centre.y),
                 true);
             
             g.setGradientFill(glow);
@@ -84,8 +84,8 @@ namespace Knobula
         
         // Panel background with subtle gradient
         juce::ColourGradient bgGrad(
-            Colors::panelSurface.brighter(0.05f), bounds.getX(), bounds.getY(),
-            Colors::panelSurface.darker(0.05f), bounds.getX(), bounds.getBottom(), false);
+            Colors::panelSurface.brighter(0.05f), juce::Point<float>(bounds.getX(), bounds.getY()),
+            Colors::panelSurface.darker(0.05f), juce::Point<float>(bounds.getX(), bounds.getBottom()), false);
         g.setGradientFill(bgGrad);
         g.fillRoundedRectangle(bounds.reduced(2.0f), 8.0f);
         
@@ -99,7 +99,7 @@ namespace Knobula
         // Title
         auto titleArea = bounds.removeFromTop(24.0f);
         g.setColour(Colors::tubeGlowOn.interpolatedWith(Colors::textPrimary, 0.5f));
-        g.setFont(juce::Font("Arial", 12.0f, juce::Font::bold));
+        g.setFont(juce::FontOptions().withHeight(12.0f).withStyle("Bold"));
         g.drawText("HYSTERESIS", titleArea, juce::Justification::centred);
         
         // Decorative line

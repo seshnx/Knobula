@@ -1,15 +1,15 @@
 /*
   ==============================================================================
-    Knobula - High-Fidelity Mastering EQ
-    KnobulaLookAndFeel Implementation
+    Aetheri - High-Fidelity Mastering EQ
+    AetheriLookAndFeel Implementation
   ==============================================================================
 */
 
-#include "KnobulaLookAndFeel.h"
+#include "AetheriLookAndFeel.h"
 
-namespace Knobula
+namespace Aetheri
 {
-    KnobulaLookAndFeel::KnobulaLookAndFeel()
+    AetheriLookAndFeel::AetheriLookAndFeel()
     {
         // Set up fonts
         mainFont = juce::Font("Arial", 14.0f, juce::Font::plain);
@@ -38,7 +38,7 @@ namespace Knobula
         setColour(juce::PopupMenu::highlightedBackgroundColourId, Colors::buttonOn);
     }
     
-    void KnobulaLookAndFeel::drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
+    void AetheriLookAndFeel::drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
                                               float sliderPosProportional, float rotaryStartAngle,
                                               float rotaryEndAngle, juce::Slider& slider)
     {
@@ -52,7 +52,7 @@ namespace Knobula
         drawLargeKnob(g, bounds, sliderPosProportional, accentColor, isSmall);
     }
     
-    void KnobulaLookAndFeel::drawLargeKnob(juce::Graphics& g, juce::Rectangle<float> bounds,
+    void AetheriLookAndFeel::drawLargeKnob(juce::Graphics& g, juce::Rectangle<float> bounds,
                                            float value, juce::Colour accentColor, bool isSmall)
     {
         auto centre = bounds.getCentre();
@@ -63,15 +63,15 @@ namespace Knobula
         g.fillEllipse(centre.x - radius - 2, centre.y - radius + 2, radius * 2 + 4, radius * 2 + 4);
         
         // Outer ring (brushed metal effect)
-        juce::ColourGradient outerGrad(Colors::knobRing.brighter(0.2f), centre.x - radius, centre.y - radius,
-                                        Colors::knobRing.darker(0.2f), centre.x + radius, centre.y + radius, false);
+        juce::ColourGradient outerGrad(Colors::knobRing.brighter(0.2f), juce::Point<float>(centre.x - radius, centre.y - radius),
+                                        Colors::knobRing.darker(0.2f), juce::Point<float>(centre.x + radius, centre.y + radius), false);
         g.setGradientFill(outerGrad);
         g.fillEllipse(centre.x - radius, centre.y - radius, radius * 2, radius * 2);
         
         // Knob body
         auto bodyRadius = radius * 0.85f;
-        juce::ColourGradient bodyGrad(Colors::knobBody.brighter(0.15f), centre.x, centre.y - bodyRadius,
-                                       Colors::knobBody.darker(0.1f), centre.x, centre.y + bodyRadius, false);
+        juce::ColourGradient bodyGrad(Colors::knobBody.brighter(0.15f), juce::Point<float>(centre.x, centre.y - bodyRadius),
+                                       Colors::knobBody.darker(0.1f), juce::Point<float>(centre.x, centre.y + bodyRadius), false);
         g.setGradientFill(bodyGrad);
         g.fillEllipse(centre.x - bodyRadius, centre.y - bodyRadius, bodyRadius * 2, bodyRadius * 2);
         
@@ -112,13 +112,13 @@ namespace Knobula
         
         // Center cap
         auto capRadius = bodyRadius * 0.2f;
-        juce::ColourGradient capGrad(Colors::metalAccent.brighter(0.2f), centre.x, centre.y - capRadius,
-                                      Colors::metalAccent.darker(0.2f), centre.x, centre.y + capRadius, false);
+        juce::ColourGradient capGrad(Colors::metalAccent.brighter(0.2f), juce::Point<float>(centre.x, centre.y - capRadius),
+                                      Colors::metalAccent.darker(0.2f), juce::Point<float>(centre.x, centre.y + capRadius), false);
         g.setGradientFill(capGrad);
         g.fillEllipse(centre.x - capRadius, centre.y - capRadius, capRadius * 2, capRadius * 2);
     }
     
-    void KnobulaLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button& button,
+    void AetheriLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button& button,
                                                    const juce::Colour& backgroundColour,
                                                    bool shouldDrawButtonAsHighlighted,
                                                    bool shouldDrawButtonAsDown)
@@ -141,7 +141,7 @@ namespace Knobula
         g.drawRoundedRectangle(bounds, 4.0f, 1.0f);
     }
     
-    void KnobulaLookAndFeel::drawToggleButton(juce::Graphics& g, juce::ToggleButton& button,
+    void AetheriLookAndFeel::drawToggleButton(juce::Graphics& g, juce::ToggleButton& button,
                                               bool shouldDrawButtonAsHighlighted,
                                               bool shouldDrawButtonAsDown)
     {
@@ -170,7 +170,7 @@ namespace Knobula
                    juce::Justification::centredLeft);
     }
     
-    void KnobulaLookAndFeel::drawLabel(juce::Graphics& g, juce::Label& label)
+    void AetheriLookAndFeel::drawLabel(juce::Graphics& g, juce::Label& label)
     {
         g.fillAll(label.findColour(juce::Label::backgroundColourId));
         
@@ -181,7 +181,7 @@ namespace Knobula
         g.drawText(label.getText(), textArea, label.getJustificationType(), true);
     }
     
-    void KnobulaLookAndFeel::drawComboBox(juce::Graphics& g, int width, int height, bool isButtonDown,
+    void AetheriLookAndFeel::drawComboBox(juce::Graphics& g, int width, int height, bool isButtonDown,
                                           int buttonX, int buttonY, int buttonW, int buttonH,
                                           juce::ComboBox& box)
     {
@@ -207,12 +207,12 @@ namespace Knobula
         g.fillPath(arrow);
     }
     
-    juce::Font KnobulaLookAndFeel::getLabelFont(juce::Label& /*label*/)
+    juce::Font AetheriLookAndFeel::getLabelFont(juce::Label& /*label*/)
     {
         return labelFont;
     }
     
-    void KnobulaLookAndFeel::drawPanelSection(juce::Graphics& g, juce::Rectangle<float> bounds, 
+    void AetheriLookAndFeel::drawPanelSection(juce::Graphics& g, juce::Rectangle<float> bounds, 
                                               const juce::String& title)
     {
         // Background
@@ -233,7 +233,7 @@ namespace Knobula
         }
     }
     
-    void KnobulaLookAndFeel::drawBrushedMetal(juce::Graphics& g, juce::Rectangle<float> bounds)
+    void AetheriLookAndFeel::drawBrushedMetal(juce::Graphics& g, juce::Rectangle<float> bounds)
     {
         // Base metal color
         g.setColour(Colors::metalAccent);

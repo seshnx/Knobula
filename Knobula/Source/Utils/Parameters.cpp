@@ -1,13 +1,13 @@
 /*
   ==============================================================================
-    Knobula - High-Fidelity Mastering EQ
+    Aetheri - High-Fidelity Mastering EQ
     Parameter Definitions Implementation
   ==============================================================================
 */
 
 #include "Parameters.h"
 
-namespace Knobula
+namespace Aetheri
 {
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout()
     {
@@ -115,6 +115,18 @@ namespace Knobula
                     juce::ParameterID(ParamIDs::bandEnabled(band, channel), 1),
                     bandName + " Enable " + chName,
                     true));
+                
+                // Band Solo
+                params.push_back(std::make_unique<juce::AudioParameterBool>(
+                    juce::ParameterID(ParamIDs::bandSolo(band, channel), 1),
+                    bandName + " Solo " + chName,
+                    false));
+                
+                // Band Mute
+                params.push_back(std::make_unique<juce::AudioParameterBool>(
+                    juce::ParameterID(ParamIDs::bandMute(band, channel), 1),
+                    bandName + " Mute " + chName,
+                    false));
             }
         }
         
@@ -144,6 +156,18 @@ namespace Knobula
             juce::NormalisableRange<float>(0.0f, 100.0f, 0.1f),
             100.0f,
             juce::AudioParameterFloatAttributes().withLabel("%")));
+        
+        // Processing Options
+        params.push_back(std::make_unique<juce::AudioParameterChoice>(
+            juce::ParameterID(ParamIDs::oversampling, 1),
+            "Oversampling",
+            juce::StringArray{"1x", "2x", "4x"},
+            0));  // Default to 1x
+        
+        params.push_back(std::make_unique<juce::AudioParameterBool>(
+            juce::ParameterID(ParamIDs::autoGainComp, 1),
+            "Auto Gain Compensation",
+            false));  // Default off
         
         return { params.begin(), params.end() };
     }

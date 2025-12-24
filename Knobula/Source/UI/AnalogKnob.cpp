@@ -7,15 +7,16 @@
 
 #include "AnalogKnob.h"
 
-namespace Knobula
+namespace Aetheri
 {
     AnalogKnob::AnalogKnob(const juce::String& labelText, KnobSize size)
-        : knobSize(size), accentColor(Colors::bandLMF)
+        : knobSize(size), accentColor(Colors::bandLMF), normalSensitivity(250)
     {
         // Setup slider
         slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
         slider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
         slider.setColour(juce::Slider::rotarySliderFillColourId, accentColor);
+        slider.setMouseDragSensitivity(normalSensitivity);
         addAndMakeVisible(slider);
         
         // Setup name label
@@ -40,23 +41,39 @@ namespace Knobula
         repaint();
     }
     
-    void AnalogKnob::attachToParameter(juce::AudioProcessorValueTreeState& apvts,
-                                       const juce::String& paramID)
+    void AnalogKnob::attachToParameter(juce::AudioProcessorValueTreeState& state,
+                                       const juce::String& pID)
     {
+        this->apvts = &state;
+        this->paramID = pID;
         attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(
-            apvts, paramID, slider);
+            state, pID, slider);
     }
     
     void AnalogKnob::sliderValueChanged()
     {
         if (showValue)
         {
-            juce::String text = juce::String(slider.getValue(), 1) + valueSuffix;
+            double value = slider.getValue();
+            juce::String text;
+            
+            // Smart formatting: kHz for frequencies >= 1000 Hz
+            if (valueSuffix == " Hz" && value >= 1000.0)
+            {
+                text = juce::String(value / 1000.0, 2) + " kHz";
+            }
+            else
+            {
+                // Determine decimal places based on value
+                int decimals = (std::abs(value) < 10.0) ? 1 : 0;
+                text = juce::String(value, decimals) + valueSuffix;
+            }
+            
             valueLabel.setText(text, juce::dontSendNotification);
         }
     }
     
-    void AnalogKnob::paint(juce::Graphics& g)
+    void AnalogKnob::paint(juce::Graphics& /*g*/)
     {
         // Optional: draw subtle background behind knob area
     }
@@ -79,6 +96,43 @@ namespace Knobula
         
         // Slider takes remaining space
         slider.setBounds(bounds.reduced(2));
+    }
+    
+    void AnalogKnob::mouseDown(const juce::MouseEvent& e)
+    {
+        // Fine adjustment: Shift = fine (3x sensitivity), Ctrl/Cmd = coarse (1/3 sensitivity)
+        if (e.mods.isShiftDown())
+        {
+            slider.setMouseDragSensitivity(normalSensitivity * 3);  // Fine adjustment
+        }
+        else if (e.mods.isCommandDown() || e.mods.isCtrlDown())
+        {
+            slider.setMouseDragSensitivity(normalSensitivity / 3);  // Coarse adjustment
+        }
+        else
+        {
+            slider.setMouseDragSensitivity(normalSensitivity);  // Normal
+        }
+        
+        Component::mouseDown(e);
+    }
+    
+    void AnalogKnob::mouseDoubleClick(const juce::MouseEvent& /*e*/)
+    {
+        // Reset to default value
+        if (apvts && paramID.isNotEmpty())
+        {
+            auto* param = apvts->getParameter(paramID);
+            if (param)
+            {
+                param->setValueNotifyingHost(param->getDefaultValue());
+                return;
+            }
+        }
+        
+        // Fallback: set slider to middle of range
+        auto range = slider.getRange();
+        slider.setValue(range.getStart() + range.getLength() * 0.5, juce::sendNotificationSync);
     }
     
     //==============================================================================
@@ -115,7 +169,7 @@ namespace Knobula
         // Draw band indicator/title
         g.setColour(bandColor);
         auto titleArea = bounds.removeFromTop(20.0f);
-        g.setFont(juce::Font("Arial", 12.0f, juce::Font::bold));
+        g.setFont(juce::FontOptions().withHeight(12.0f).withStyle("Bold"));
         g.drawText(bandName, titleArea, juce::Justification::centred);
         
         // Draw subtle underline

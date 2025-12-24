@@ -6,10 +6,13 @@
 */
 
 #pragma once
-#include <JuceHeader.h>
+#include <juce_gui_basics/juce_gui_basics.h>
+#include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_graphics/juce_graphics.h>
+#include <juce_core/juce_core.h>
 #include "ColorPalette.h"
 
-namespace Knobula
+namespace Aetheri
 {
     /**
      * Custom analog-style rotary knob with label and value display
@@ -30,10 +33,15 @@ namespace Knobula
         void setAccentColor(juce::Colour color);
         void setValueSuffix(const juce::String& suffix) { valueSuffix = suffix; }
         void setShowValue(bool show) { showValue = show; repaint(); }
+        void setTooltip(const juce::String& tooltip) { slider.setTooltip(tooltip); }
         
         // Attach to parameter
         void attachToParameter(juce::AudioProcessorValueTreeState& apvts, 
                               const juce::String& paramID);
+        
+        // Mouse events for double-click reset
+        void mouseDown(const juce::MouseEvent& e) override;
+        void mouseDoubleClick(const juce::MouseEvent& e) override;
         
     private:
         juce::Slider slider;
@@ -44,8 +52,11 @@ namespace Knobula
         juce::Colour accentColor;
         juce::String valueSuffix;
         bool showValue = true;
+        int normalSensitivity;
         
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attachment;
+        juce::AudioProcessorValueTreeState* apvts = nullptr;
+        juce::String paramID;
         
         void sliderValueChanged();
         

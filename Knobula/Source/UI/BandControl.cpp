@@ -7,7 +7,7 @@
 
 #include "BandControl.h"
 
-namespace Knobula
+namespace Aetheri
 {
     BandControl::BandControl(int index, const juce::String& name)
         : bandIndex(index),
@@ -30,12 +30,19 @@ namespace Knobula
         // Setup frequency knob
         freqKnob.setAccentColor(bandColor.withAlpha(0.7f));
         freqKnob.setValueSuffix(" Hz");
+        freqKnob.setTooltip("Frequency: " + name + " band center frequency");
         addAndMakeVisible(freqKnob);
+        
+        // Add tooltips
+        gainKnob.setTooltip("Main Gain: ±10 dB adjustment for " + name + " band");
+        trimKnob.setTooltip("Fine Trim: ±1 dB precision adjustment for " + name + " band");
+        enableButton.setTooltip("Enable/Disable " + name + " band");
         
         // Curve selector (only visible for LF and HF)
         curveSelector.addItem("Bell", 1);
         curveSelector.addItem("Shelf", 2);
         curveSelector.setSelectedId(1);
+        curveSelector.setTooltip("Curve Type: Bell (peaking) or Shelf (shelving) response");
         addChildComponent(curveSelector);  // Hidden by default
         
         // Enable button
@@ -43,6 +50,18 @@ namespace Knobula
         enableButton.setClickingTogglesState(true);
         enableButton.setToggleState(true, juce::dontSendNotification);
         addAndMakeVisible(enableButton);
+        
+        // Solo button
+        soloButton.setButtonText("S");
+        soloButton.setClickingTogglesState(true);
+        soloButton.setTooltip("Solo: Isolate this band (only soloed bands will be audible)");
+        addAndMakeVisible(soloButton);
+        
+        // Mute button
+        muteButton.setButtonText("M");
+        muteButton.setClickingTogglesState(true);
+        muteButton.setTooltip("Mute: Bypass this band");
+        addAndMakeVisible(muteButton);
         
         // Show curve selector for LF and HF bands
         showCurve = (bandIndex == 0 || bandIndex == 3);
@@ -80,15 +99,37 @@ namespace Knobula
         // Attach enable
         enableAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
             apvts, ParamIDs::bandEnabled(bandIndex, channel), enableButton);
+        
+        // Attach solo
+        soloAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
+            apvts, ParamIDs::bandSolo(bandIndex, channel), soloButton);
+        
+        // Attach mute
+        muteAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
+            apvts, ParamIDs::bandMute(bandIndex, channel), muteButton);
     }
     
     void BandControl::paint(juce::Graphics& g)
     {
         auto bounds = getLocalBounds().toFloat();
         
-        // Background panel
-        g.setColour(Colors::panelSurface.withAlpha(0.5f));
+        // Background panel - highlight if soloed
+        if (soloButton.getToggleState())
+        {
+            g.setColour(bandColor.withAlpha(0.3f));
+        }
+        else
+        {
+            g.setColour(Colors::panelSurface.withAlpha(0.5f));
+        }
         g.fillRoundedRectangle(bounds.reduced(2.0f), 6.0f);
+        
+        // Dimmed if muted
+        if (muteButton.getToggleState())
+        {
+            g.setColour(Colors::panelBackground.withAlpha(0.4f));
+            g.fillRoundedRectangle(bounds.reduced(2.0f), 6.0f);
+        }
         
         // Band color indicator strip at top
         auto indicator = bounds.removeFromTop(4.0f).reduced(4.0f, 0.0f);
@@ -97,7 +138,7 @@ namespace Knobula
         
         // Band name
         g.setColour(bandColor);
-        g.setFont(juce::Font("Arial", 14.0f, juce::Font::bold));
+        g.setFont(juce::FontOptions().withHeight(14.0f).withStyle("Bold"));
         g.drawText(bandName, bounds.removeFromTop(22.0f), juce::Justification::centred);
     }
     
@@ -108,8 +149,12 @@ namespace Knobula
         // Top indicator and name area
         bounds.removeFromTop(28);
         
-        // Enable button at bottom
-        enableButton.setBounds(bounds.removeFromBottom(24).reduced(8, 2));
+        // Bottom row: Enable, Solo, Mute buttons
+        auto buttonRow = bounds.removeFromBottom(24).reduced(4, 2);
+        int buttonWidth = buttonRow.getWidth() / 3;
+        enableButton.setBounds(buttonRow.removeFromLeft(buttonWidth).reduced(2, 0));
+        soloButton.setBounds(buttonRow.removeFromLeft(buttonWidth).reduced(2, 0));
+        muteButton.setBounds(buttonRow.reduced(2, 0));
         
         // Curve selector (if visible)
         if (showCurve)
@@ -166,7 +211,7 @@ namespace Knobula
         g.fillRect(headerArea);
         
         g.setColour(Colors::textPrimary);
-        g.setFont(juce::Font("Arial", 13.0f, juce::Font::bold));
+        g.setFont(juce::FontOptions().withHeight(13.0f).withStyle("Bold"));
         g.drawText(channelName, headerArea, juce::Justification::centred);
         
         // Separator line

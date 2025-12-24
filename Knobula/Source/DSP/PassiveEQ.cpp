@@ -7,7 +7,7 @@
 
 #include "PassiveEQ.h"
 
-namespace Knobula
+namespace Aetheri
 {
     //==============================================================================
     // EQBand Implementation
@@ -19,6 +19,9 @@ namespace Knobula
         smoothedGain.reset(sampleRate, 0.05);  // 50ms smoothing
         smoothedFreq.reset(sampleRate, 0.05);
         reset();
+        // Initialize coefficients to unity (bypass) state
+        needsUpdate = true;
+        updateCoefficients();
     }
     
     void EQBand::reset()
@@ -32,13 +35,15 @@ namespace Knobula
         currentQ = q;
         currentCurve = curve;
         
-        if (frequency != currentFreq || gainDB != currentGainDB)
+        if (frequency != currentFreq || gainDB != currentGainDB || curve != currentCurve)
         {
-            smoothedFreq.setTargetValue(frequency);
-            smoothedGain.setTargetValue(gainDB);
+            smoothedFreq.setCurrentAndTargetValue(frequency);
+            smoothedGain.setCurrentAndTargetValue(gainDB);
             currentFreq = frequency;
             currentGainDB = gainDB;
             needsUpdate = true;
+            // Force immediate coefficient update
+            updateCoefficients();
         }
     }
     
@@ -195,25 +200,73 @@ namespace Knobula
         if (band >= 0 && band < NumBands)
         {
             float totalGain = gainDB + trimDB;
-            float q = BandDefaults::getQ(band);
+            float q = Aetheri::BandDefaults::getQ(band);
             bands[band].setParameters(frequency, totalGain, q, curve, enabled);
         }
+    }
+    
+    void ChannelEQ::setBandSolo(int band, bool solo)
+    {
+        if (band >= 0 && band < NumBands)
+        {
+            bandSolo[band] = solo;
+        }
+    }
+    
+    void ChannelEQ::setBandMute(int band, bool mute)
+    {
+        if (band >= 0 && band < NumBands)
+        {
+            bandMute[band] = mute;
+        }
+    }
+    
+    bool ChannelEQ::hasAnySolo() const
+    {
+        for (bool solo : bandSolo)
+        {
+            if (solo) return true;
+        }
+        return false;
     }
     
     float ChannelEQ::processSample(float input)
     {
         float output = input;
+        bool anySolo = hasAnySolo();
         
         // Process through all bands in series (passive topology)
         for (int i = 0; i < NumBands; ++i)
         {
-            float bandOutput = bands[i].processSample(output);
+            // Check if this band should be processed
+            bool shouldProcess = true;
             
-            // Update energy measurement with envelope following
-            float energy = std::abs(bandOutput - output);
-            bandEnergies[i] = bandEnergies[i] * 0.99f + energy * 0.01f;
+            // Solo logic: if any band is soloed, only process soloed bands
+            if (anySolo && !bandSolo[i])
+            {
+                shouldProcess = false;  // Skip non-soloed bands
+            }
             
-            output = bandOutput;
+            // Mute logic: if band is muted (and not soloed), bypass it
+            if (bandMute[i] && !bandSolo[i])
+            {
+                shouldProcess = false;  // Skip muted bands
+            }
+            
+            if (shouldProcess)
+            {
+                // Process the band
+                float bandInput = output;
+                float bandOutput = bands[i].processSample(output);
+                
+                // Update energy measurement - measure the band's contribution
+                float energy = std::abs(bandOutput);
+                float bandChange = std::abs(bandOutput - bandInput);
+                bandEnergies[i] = bandEnergies[i] * 0.99f + (energy * 0.5f + bandChange * 0.5f) * 0.01f;
+                
+                output = bandOutput;
+            }
+            // If band is skipped, output remains unchanged (signal passes through)
         }
         
         return output;
@@ -295,6 +348,34 @@ namespace Knobula
             if (channelsLinked && channel == 0)
             {
                 channelEQs[1].setBandParameters(band, frequency, gainDB, trimDB, curve, enabled);
+            }
+        }
+    }
+    
+    void PassiveEQ::setBandSolo(int band, int channel, bool solo)
+    {
+        if (channel >= 0 && channel < 2)
+        {
+            channelEQs[channel].setBandSolo(band, solo);
+            
+            // If linked, apply same solo state to other channel
+            if (channelsLinked && channel == 0)
+            {
+                channelEQs[1].setBandSolo(band, solo);
+            }
+        }
+    }
+    
+    void PassiveEQ::setBandMute(int band, int channel, bool mute)
+    {
+        if (channel >= 0 && channel < 2)
+        {
+            channelEQs[channel].setBandMute(band, mute);
+            
+            // If linked, apply same mute state to other channel
+            if (channelsLinked && channel == 0)
+            {
+                channelEQs[1].setBandMute(band, mute);
             }
         }
     }

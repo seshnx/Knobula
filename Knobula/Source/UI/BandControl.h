@@ -6,12 +6,15 @@
 */
 
 #pragma once
-#include <JuceHeader.h>
+#include <juce_gui_basics/juce_gui_basics.h>
+#include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_graphics/juce_graphics.h>
+#include <juce_core/juce_core.h>
 #include "AnalogKnob.h"
 #include "ColorPalette.h"
 #include "Parameters.h"
 
-namespace Knobula
+namespace Aetheri
 {
     /**
      * Complete EQ Band control with:
@@ -35,6 +38,11 @@ namespace Knobula
         int getBandIndex() const { return bandIndex; }
         juce::Colour getBandColor() const { return bandColor; }
         
+        // Access to knobs for synchronization
+        AnalogKnob& getGainKnob() { return gainKnob; }
+        AnalogKnob& getTrimKnob() { return trimKnob; }
+        AnalogKnob& getFreqKnob() { return freqKnob; }
+        
         // Enable/disable curve selector (only for LF and HF)
         void setShowCurveSelector(bool show);
         
@@ -55,12 +63,18 @@ namespace Knobula
         // Enable button
         juce::TextButton enableButton;
         
+        // Solo/Mute buttons
+        juce::TextButton soloButton;
+        juce::TextButton muteButton;
+        
         // Parameter attachments
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> gainAttachment;
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> trimAttachment;
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> freqAttachment;
         std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> curveAttachment;
         std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> enableAttachment;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> soloAttachment;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> muteAttachment;
         
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(BandControl)
     };

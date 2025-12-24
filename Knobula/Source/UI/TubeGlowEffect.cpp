@@ -7,12 +7,12 @@
 
 #include "TubeGlowEffect.h"
 
-namespace Knobula
+namespace Aetheri
 {
     TubeGlowEffect::TubeGlowEffect()
     {
         setInterceptsMouseClicks(false, false);
-        startTimerHz(30);
+        startTimerHz(20);  // Reduced frequency to prevent glitches
     }
     
     TubeGlowEffect::~TubeGlowEffect()
@@ -57,9 +57,15 @@ namespace Knobula
             flickerAmount = 0.0f;
         }
         
-        if (currentIntensity > 0.001f || targetIntensity > 0.001f)
+        // Only repaint if intensity changed significantly (reduces glitches)
+        static float lastIntensity = 0.0f;
+        if (std::abs(currentIntensity - lastIntensity) > 0.01f)
         {
-            repaint();
+            lastIntensity = currentIntensity;
+            if (currentIntensity > 0.001f || targetIntensity > 0.001f)
+            {
+                repaint();
+            }
         }
     }
     
@@ -77,9 +83,9 @@ namespace Knobula
         // Top edge glow
         juce::ColourGradient topGlow(
             Colors::tubeGlowOn.withAlpha(maxAlpha),
-            bounds.getCentreX(), bounds.getY(),
+            juce::Point<float>(bounds.getCentreX(), bounds.getY()),
             Colors::tubeGlowOn.withAlpha(0.0f),
-            bounds.getCentreX(), bounds.getY() + bounds.getHeight() * 0.15f,
+            juce::Point<float>(bounds.getCentreX(), bounds.getY() + bounds.getHeight() * 0.15f),
             false);
         g.setGradientFill(topGlow);
         g.fillRect(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight() * 0.15f);
@@ -87,9 +93,9 @@ namespace Knobula
         // Bottom edge glow (stronger, simulating floor reflections)
         juce::ColourGradient bottomGlow(
             Colors::tubeGlowOn.withAlpha(maxAlpha * 1.3f),
-            bounds.getCentreX(), bounds.getBottom(),
+            juce::Point<float>(bounds.getCentreX(), bounds.getBottom()),
             Colors::tubeGlowOn.withAlpha(0.0f),
-            bounds.getCentreX(), bounds.getBottom() - bounds.getHeight() * 0.2f,
+            juce::Point<float>(bounds.getCentreX(), bounds.getBottom() - bounds.getHeight() * 0.2f),
             false);
         g.setGradientFill(bottomGlow);
         g.fillRect(bounds.getX(), bounds.getBottom() - bounds.getHeight() * 0.2f, 
@@ -98,9 +104,9 @@ namespace Knobula
         // Left edge glow
         juce::ColourGradient leftGlow(
             Colors::tubeGlowOn.withAlpha(maxAlpha * 0.8f),
-            bounds.getX(), bounds.getCentreY(),
+            juce::Point<float>(bounds.getX(), bounds.getCentreY()),
             Colors::tubeGlowOn.withAlpha(0.0f),
-            bounds.getX() + bounds.getWidth() * 0.1f, bounds.getCentreY(),
+            juce::Point<float>(bounds.getX() + bounds.getWidth() * 0.1f, bounds.getCentreY()),
             false);
         g.setGradientFill(leftGlow);
         g.fillRect(bounds.getX(), bounds.getY(), bounds.getWidth() * 0.1f, bounds.getHeight());
@@ -108,9 +114,9 @@ namespace Knobula
         // Right edge glow
         juce::ColourGradient rightGlow(
             Colors::tubeGlowOn.withAlpha(maxAlpha * 0.8f),
-            bounds.getRight(), bounds.getCentreY(),
+            juce::Point<float>(bounds.getRight(), bounds.getCentreY()),
             Colors::tubeGlowOn.withAlpha(0.0f),
-            bounds.getRight() - bounds.getWidth() * 0.1f, bounds.getCentreY(),
+            juce::Point<float>(bounds.getRight() - bounds.getWidth() * 0.1f, bounds.getCentreY()),
             false);
         g.setGradientFill(rightGlow);
         g.fillRect(bounds.getRight() - bounds.getWidth() * 0.1f, bounds.getY(), 
@@ -122,9 +128,9 @@ namespace Knobula
         auto drawCornerGlow = [&](float cx, float cy) {
             juce::ColourGradient cornerGlow(
                 Colors::tubeGlowBright.withAlpha(maxAlpha * 0.5f),
-                cx, cy,
+                juce::Point<float>(cx, cy),
                 Colors::tubeGlowOn.withAlpha(0.0f),
-                cx + cornerRadius, cy,
+                juce::Point<float>(cx + cornerRadius, cy),
                 true);
             g.setGradientFill(cornerGlow);
             g.fillEllipse(cx - cornerRadius, cy - cornerRadius, cornerRadius * 2, cornerRadius * 2);

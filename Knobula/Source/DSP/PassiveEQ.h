@@ -6,10 +6,12 @@
 */
 
 #pragma once
-#include <JuceHeader.h>
+#include <juce_audio_basics/juce_audio_basics.h>
+#include <juce_dsp/juce_dsp.h>
+#include <juce_core/juce_core.h>
 #include "Parameters.h"
 
-namespace Knobula
+namespace Aetheri
 {
     /**
      * Single EQ band with passive/parallel topology modeling
@@ -80,6 +82,9 @@ namespace Knobula
         void setBandParameters(int band, float frequency, float gainDB, float trimDB, 
                               EQBand::CurveType curve, bool enabled);
         
+        void setBandSolo(int band, bool solo);
+        void setBandMute(int band, bool mute);
+        
         void processBlock(juce::AudioBuffer<float>& buffer, int channel);
         float processSample(float input);
         
@@ -90,9 +95,13 @@ namespace Knobula
     private:
         std::array<EQBand, NumBands> bands;
         std::array<float, NumBands> bandEnergies = {0.0f, 0.0f, 0.0f, 0.0f};
+        std::array<bool, NumBands> bandSolo = {false, false, false, false};
+        std::array<bool, NumBands> bandMute = {false, false, false, false};
         
         // Passive topology: bands interact through slight phase/gain coupling
         float passiveCoupling = 0.02f;  // Subtle interaction between bands
+        
+        bool hasAnySolo() const;
     };
     
     /**
@@ -116,6 +125,9 @@ namespace Knobula
         void setBandParameters(int band, int channel, 
                               float frequency, float gainDB, float trimDB,
                               EQBand::CurveType curve, bool enabled);
+        
+        void setBandSolo(int band, int channel, bool solo);
+        void setBandMute(int band, int channel, bool mute);
         
         void processBlock(juce::AudioBuffer<float>& buffer);
         

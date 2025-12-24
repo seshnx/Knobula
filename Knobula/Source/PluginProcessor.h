@@ -1,6 +1,6 @@
 /*
   ==============================================================================
-    Knobula - High-Fidelity Dual-Channel Mastering EQ
+    Aetheri - High-Fidelity Dual-Channel Mastering EQ
     PluginProcessor - Audio Processing Core
     
     Features:
@@ -13,18 +13,20 @@
 */
 
 #pragma once
-#include <JuceHeader.h>
+#include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_dsp/juce_dsp.h>
+#include <juce_core/juce_core.h>
 #include "DSP/PassiveEQ.h"
 #include "DSP/HysteresisProcessor.h"
 #include "DSP/VUMeter.h"
 #include "DSP/HighLowPassFilters.h"
 #include "Utils/Parameters.h"
 
-class KnobulaAudioProcessor : public juce::AudioProcessor
+class AetheriAudioProcessor : public juce::AudioProcessor
 {
 public:
-    KnobulaAudioProcessor();
-    ~KnobulaAudioProcessor() override;
+    AetheriAudioProcessor();
+    ~AetheriAudioProcessor() override;
 
     //==============================================================================
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
@@ -52,6 +54,16 @@ public:
     void setCurrentProgram(int index) override;
     const juce::String getProgramName(int index) override;
     void changeProgramName(int index, const juce::String& newName) override;
+    
+    // Preset management
+    void loadPreset(int index);
+    void saveCurrentAsPreset(const juce::String& name);
+    void deletePreset(int index);
+    void renamePreset(int index, const juce::String& newName);
+    bool exportPreset(int index, const juce::File& file);
+    bool importPreset(const juce::File& file);
+    juce::StringArray getPresetNames() const;
+    bool isFactoryPreset(int index) const;
 
     //==============================================================================
     void getStateInformation(juce::MemoryBlock& destData) override;
@@ -67,24 +79,33 @@ public:
     float getBandEnergy(int band, int channel) const;
     
     // VU Meters
-    const Knobula::StereoVUMeter& getInputVU() const { return inputVU; }
-    const Knobula::StereoVUMeter& getOutputVU() const { return outputVU; }
+    const Aetheri::StereoVUMeter& getInputVU() const { return inputVU; }
+    const Aetheri::StereoVUMeter& getOutputVU() const { return outputVU; }
+    Aetheri::StereoVUMeter& getInputVU() { return inputVU; }
+    Aetheri::StereoVUMeter& getOutputVU() { return outputVU; }
     
     // Hysteresis glow intensity
     float getHysteresisGlowIntensity() const;
+    
+    // Phase correlation (for meter)
+    float getPhaseCorrelation() const { return phaseCorrelation; }
+    
+    // A/B Comparison methods
+    void toggleAB();
+    bool isStateA() const { return currentIsStateA; }
 
 private:
     // Parameter tree state
     juce::AudioProcessorValueTreeState parameters;
     
     // DSP Processors
-    Knobula::PassiveEQ passiveEQ;
-    Knobula::HysteresisProcessor hysteresis;
-    Knobula::FilterSection filterSection;
+    Aetheri::PassiveEQ passiveEQ;
+    Aetheri::HysteresisProcessor hysteresis;
+    Aetheri::FilterSection filterSection;
     
     // Metering
-    Knobula::StereoVUMeter inputVU;
-    Knobula::StereoVUMeter outputVU;
+    Aetheri::StereoVUMeter inputVU;
+    Aetheri::StereoVUMeter outputVU;
     
     // Cached parameter values
     std::atomic<float>* inputGainParam = nullptr;
@@ -99,15 +120,46 @@ private:
     std::atomic<float>* tubeHarmonicsParam = nullptr;
     std::atomic<float>* transformerSatParam = nullptr;
     std::atomic<float>* hystMixParam = nullptr;
+    std::atomic<float>* oversamplingParam = nullptr;
+    std::atomic<float>* autoGainCompParam = nullptr;
     
     // Band parameters [band][channel]
     std::array<std::array<std::atomic<float>*, 2>, 4> bandGainParams;
     std::array<std::array<std::atomic<float>*, 2>, 4> bandTrimParams;
     std::array<std::array<std::atomic<float>*, 2>, 4> bandFreqParams;
     std::array<std::array<std::atomic<float>*, 2>, 4> bandEnabledParams;
+    std::array<std::array<std::atomic<float>*, 2>, 4> bandSoloParams;
+    std::array<std::array<std::atomic<float>*, 2>, 4> bandMuteParams;
     std::array<std::array<std::atomic<float>*, 2>, 2> bandCurveParams;  // Only LF and HF
     
+    // Preset management
+    int currentProgram = 0;
+    juce::StringArray userPresetNames;
+    std::vector<juce::ValueTree> userPresets;
+    
+    // A/B Comparison
+    juce::ValueTree stateA;
+    juce::ValueTree stateB;
+    bool currentIsStateA = true;  // Currently viewing state A
+    
+    // Oversampling
+    int oversamplingFactor = 1;
+    std::unique_ptr<juce::dsp::Oversampling<float>> oversampler;
+    
+    // Auto-gain compensation
+    float referenceLevel = 0.0f;  // Reference level for auto-gain
+    juce::SmoothedValue<float> autoGainAdjustment;
+    
+    // Phase correlation
+    float phaseCorrelation = 0.0f;
+    
     void updateDSPFromParameters();
+    void calculatePhaseCorrelation(const juce::AudioBuffer<float>& buffer);
+    float calculateAutoGainAdjustment();
+    
+    // A/B Comparison methods (private helpers)
+    void saveCurrentToAB();
+    void loadABState(bool loadA);
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(KnobulaAudioProcessor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AetheriAudioProcessor)
 };

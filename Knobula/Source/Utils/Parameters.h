@@ -1,14 +1,16 @@
 /*
   ==============================================================================
-    Knobula - High-Fidelity Mastering EQ
+    Aetheri - High-Fidelity Mastering EQ
     Parameter Definitions and Management
   ==============================================================================
 */
 
 #pragma once
-#include <JuceHeader.h>
+#include <juce_audio_processors/juce_audio_processors.h>
+#include <juce_core/juce_core.h>
 
-namespace Knobula
+// Core parameter namespace
+namespace Aetheri
 {
     // Parameter IDs
     namespace ParamIDs
@@ -34,12 +36,18 @@ namespace Knobula
         inline juce::String bandFreq(int band, int channel)     { return "band" + juce::String(band) + "_freq_" + juce::String(channel); }
         inline juce::String bandCurve(int band, int channel)    { return "band" + juce::String(band) + "_curve_" + juce::String(channel); }  // 0=Bell, 1=Shelf
         inline juce::String bandEnabled(int band, int channel)  { return "band" + juce::String(band) + "_enabled_" + juce::String(channel); }
+        inline juce::String bandSolo(int band, int channel)     { return "band" + juce::String(band) + "_solo_" + juce::String(channel); }
+        inline juce::String bandMute(int band, int channel)    { return "band" + juce::String(band) + "_mute_" + juce::String(channel); }
         
         // Hysteresis Stage
         inline const juce::String hystEnabled       { "hystEnabled" };
         inline const juce::String tubeHarmonics     { "tubeHarmonics" };
         inline const juce::String transformerSat    { "transformerSat" };
         inline const juce::String hystMix           { "hystMix" };
+        
+        // Processing Options
+        inline const juce::String oversampling      { "oversampling" };  // 0=1x, 1=2x, 2=4x
+        inline const juce::String autoGainComp      { "autoGainComp" };  // Auto-gain compensation
     }
     
     // Band frequency defaults (Hz)

@@ -7,7 +7,7 @@
 
 #include "HighLowPassFilters.h"
 
-namespace Knobula
+namespace Aetheri
 {
     //==============================================================================
     // HighPassFilter Implementation

@@ -1,20 +1,23 @@
 /*
   ==============================================================================
     Knobula - High-Fidelity Mastering EQ
-    NebulaVisualizer Implementation
+    NebulaVisualizer Implementation - Standard JUCE Graphics
+    Organic nebula cloud visualization with color blending
   ==============================================================================
 */
 
 #include "NebulaVisualizer.h"
+#include <juce_graphics/juce_graphics.h>
+#include <cmath>
 
-namespace Knobula
+namespace Aetheri
 {
     NebulaVisualizer::NebulaVisualizer()
         : rng(std::random_device{}())
     {
+        setOpaque(false);  // Transparent background
+        initializeClusters();
         initializeParticles();
-        initializeClouds();
-        startTimerHz(24);  // 24 FPS for low CPU overhead
     }
     
     NebulaVisualizer::~NebulaVisualizer()
@@ -22,51 +25,57 @@ namespace Knobula
         stopTimer();
     }
     
-    void NebulaVisualizer::initializeParticles()
-    {
-        std::uniform_real_distribution<float> posDist(0.0f, 1.0f);
-        std::uniform_real_distribution<float> sizeDist(0.5f, 2.5f);
-        std::uniform_real_distribution<float> brightDist(0.2f, 0.8f);
-        std::uniform_real_distribution<float> phaseDist(0.0f, juce::MathConstants<float>::twoPi);
-        std::uniform_real_distribution<float> speedDist(0.005f, 0.03f);
-        std::uniform_real_distribution<float> depthDist(0.5f, 1.5f);
-        
-        for (int i = 0; i < MAX_PARTICLES; ++i)
-        {
-            auto& p = particles[i];
-            p.x = posDist(rng);
-            p.y = posDist(rng);
-            p.size = sizeDist(rng);
-            p.baseBrightness = brightDist(rng);
-            p.brightness = p.baseBrightness;
-            p.twinklePhase = phaseDist(rng);
-            p.twinkleSpeed = speedDist(rng);
-            p.bandIndex = i / PARTICLES_PER_BAND;  // Distribute across bands
-            p.depth = depthDist(rng);
-        }
-    }
-    
-    void NebulaVisualizer::initializeClouds()
+    void NebulaVisualizer::initializeClusters()
     {
         std::uniform_real_distribution<float> posDist(0.1f, 0.9f);
         std::uniform_real_distribution<float> radiusDist(0.15f, 0.35f);
+        std::uniform_real_distribution<float> driftDist(-0.0002f, 0.0002f);
+        std::uniform_real_distribution<float> densityDist(0.6f, 1.0f);
         
-        juce::Colour cloudColors[] = {
-            Colors::bandLF.withAlpha(0.03f),
-            Colors::bandLMF.withAlpha(0.02f),
-            Colors::bandHMF.withAlpha(0.02f),
-            Colors::bandHF.withAlpha(0.03f),
-            Colors::nebulaDust.withAlpha(0.02f),
-            Colors::nebulaDust.withAlpha(0.015f)
-        };
-        
-        for (int i = 0; i < 6; ++i)
+        for (int i = 0; i < NUM_CLUSTERS; ++i)
         {
-            clouds[i].x = posDist(rng);
-            clouds[i].y = posDist(rng);
-            clouds[i].radius = radiusDist(rng);
-            clouds[i].color = cloudColors[i];
-            clouds[i].alpha = 0.02f + (rng() % 100) * 0.0002f;
+            auto& cluster = clusters[i];
+            cluster.centerX = posDist(rng);
+            cluster.centerY = posDist(rng);
+            cluster.radius = radiusDist(rng);
+            cluster.density = densityDist(rng);
+            cluster.brightness = 0.4f + (rng() % 60) * 0.01f;
+            cluster.driftX = driftDist(rng);
+            cluster.driftY = driftDist(rng);
+            cluster.bandIndex = i % 4;  // Distribute across bands
+            cluster.age = static_cast<float>(rng() % 1000) / 1000.0f;
+        }
+    }
+    
+    void NebulaVisualizer::initializeParticles()
+    {
+        std::uniform_real_distribution<float> offsetDist(-1.0f, 1.0f);
+        std::uniform_real_distribution<float> sizeDist(0.8f, 2.5f);
+        std::uniform_real_distribution<float> brightDist(0.2f, 0.6f);
+        std::uniform_real_distribution<float> phaseDist(0.0f, juce::MathConstants<float>::twoPi);
+        std::uniform_real_distribution<float> speedDist(0.005f, 0.015f);
+        
+        for (int clusterIdx = 0; clusterIdx < NUM_CLUSTERS; ++clusterIdx)
+        {
+            const auto& cluster = clusters[clusterIdx];
+            auto& clusterParticles = particles[clusterIdx];
+            
+            for (int i = 0; i < PARTICLES_PER_CLUSTER; ++i)
+            {
+                auto& p = clusterParticles[i];
+                
+                // Distribute particles in a Gaussian-like pattern around cluster center
+                float angle = static_cast<float>(i) / PARTICLES_PER_CLUSTER * juce::MathConstants<float>::twoPi;
+                float distance = std::abs(offsetDist(rng)) * cluster.radius * 0.8f;
+                
+                p.x = std::cos(angle) * distance;
+                p.y = std::sin(angle) * distance;
+                p.size = sizeDist(rng);
+                p.baseBrightness = brightDist(rng);
+                p.brightness = p.baseBrightness;
+                p.phase = phaseDist(rng);
+                p.speed = speedDist(rng);
+            }
         }
     }
     
@@ -74,7 +83,7 @@ namespace Knobula
     {
         if (shouldAnimate && !isTimerRunning())
         {
-            startTimerHz(24);
+            startTimerHz(30);  // 30 FPS is sufficient
         }
         else if (!shouldAnimate && isTimerRunning())
         {
@@ -93,46 +102,84 @@ namespace Knobula
     void NebulaVisualizer::timerCallback()
     {
         // Smooth band energies
+        bool needsRepaint = false;
         for (int i = 0; i < 4; ++i)
         {
+            float oldEnergy = smoothedEnergies[i];
             smoothedEnergies[i] = smoothedEnergies[i] * 0.85f + bandEnergies[i] * 0.15f;
+            if (std::abs(smoothedEnergies[i] - oldEnergy) > 0.01f)
+                needsRepaint = true;
         }
         
         // Smooth intensity
+        float oldIntensity = currentIntensity;
         currentIntensity = currentIntensity * 0.95f + targetIntensity * 0.05f;
+        if (std::abs(currentIntensity - oldIntensity) > 0.01f)
+            needsRepaint = true;
         
-        // Update particles
+        // Update clusters and particles
+        updateClusters();
         updateParticles();
         
-        repaint();
+        // Only repaint if something changed
+        if (needsRepaint)
+            repaint();
+    }
+    
+    void NebulaVisualizer::updateClusters()
+    {
+        for (auto& cluster : clusters)
+        {
+            // Drift clusters slowly
+            cluster.centerX += cluster.driftX;
+            cluster.centerY += cluster.driftY;
+            
+            // Wrap around edges
+            if (cluster.centerX < 0.0f) cluster.centerX += 1.0f;
+            if (cluster.centerX > 1.0f) cluster.centerX -= 1.0f;
+            if (cluster.centerY < 0.0f) cluster.centerY += 1.0f;
+            if (cluster.centerY > 1.0f) cluster.centerY -= 1.0f;
+            
+            // Age clusters for subtle evolution
+            cluster.age += 0.001f;
+            if (cluster.age > 1.0f) cluster.age -= 1.0f;
+            
+            // Update brightness based on band energy
+            if (cluster.bandIndex >= 0 && cluster.bandIndex < 4)
+            {
+                float energyBoost = smoothedEnergies[cluster.bandIndex] * 0.5f;
+                cluster.brightness = 0.4f + energyBoost;
+            }
+        }
     }
     
     void NebulaVisualizer::updateParticles()
     {
-        for (auto& p : particles)
+        for (int clusterIdx = 0; clusterIdx < NUM_CLUSTERS; ++clusterIdx)
         {
-            // Update twinkle
-            p.twinklePhase += p.twinkleSpeed;
-            if (p.twinklePhase > juce::MathConstants<float>::twoPi)
-                p.twinklePhase -= juce::MathConstants<float>::twoPi;
+            const auto& cluster = clusters[clusterIdx];
+            auto& clusterParticles = particles[clusterIdx];
             
-            // Base twinkle
-            float twinkle = 0.5f + 0.5f * std::sin(p.twinklePhase);
-            
-            // Energy boost from corresponding band
-            float energyBoost = 0.0f;
-            if (p.bandIndex >= 0 && p.bandIndex < 4)
+            for (auto& p : clusterParticles)
             {
-                energyBoost = smoothedEnergies[p.bandIndex] * 3.0f;
+                // Update animation phase
+                p.phase += p.speed;
+                if (p.phase > juce::MathConstants<float>::twoPi)
+                    p.phase -= juce::MathConstants<float>::twoPi;
+                
+                // Gentle pulsing animation
+                float pulse = 0.5f + 0.5f * std::sin(p.phase);
+                
+                // Calculate brightness based on cluster and energy
+                float energyBoost = 0.0f;
+                if (cluster.bandIndex >= 0 && cluster.bandIndex < 4)
+                {
+                    energyBoost = smoothedEnergies[cluster.bandIndex] * 0.4f;
+                }
+                
+                p.brightness = p.baseBrightness * pulse * cluster.brightness + energyBoost;
+                p.brightness = juce::jlimit(0.0f, 1.0f, p.brightness * currentIntensity);
             }
-            
-            // Calculate final brightness
-            p.brightness = p.baseBrightness * twinkle + energyBoost;
-            p.brightness = juce::jlimit(0.0f, 1.0f, p.brightness * currentIntensity);
-            
-            // Very subtle drift
-            p.y += 0.0001f * p.depth;
-            if (p.y > 1.0f) p.y -= 1.0f;
         }
     }
     
@@ -140,30 +187,28 @@ namespace Knobula
     {
         auto bounds = getLocalBounds().toFloat();
         
-        // Draw layered background
         drawBackground(g, bounds);
-        drawClouds(g, bounds);
-        drawStars(g, bounds);
+        drawNebula(g, bounds);
     }
     
     void NebulaVisualizer::drawBackground(juce::Graphics& g, juce::Rectangle<float> bounds)
     {
-        // Deep space gradient
-        juce::ColourGradient spaceGrad(
-            Colors::nebulaBackground,
-            bounds.getCentreX(), bounds.getY(),
-            Colors::nebulaBackground.darker(0.3f),
-            bounds.getCentreX(), bounds.getBottom(),
+        // Deep space gradient background
+        juce::ColourGradient gradient(
+            Colors::nebulaBackground.withAlpha(0.4f * currentIntensity),
+            juce::Point<float>(bounds.getCentreX(), bounds.getY()),
+            Colors::nebulaBackground.darker(0.3f).withAlpha(0.2f * currentIntensity),
+            juce::Point<float>(bounds.getCentreX(), bounds.getBottom()),
             false);
         
-        g.setGradientFill(spaceGrad);
+        g.setGradientFill(gradient);
         g.fillRect(bounds);
         
         // Subtle radial vignette
         juce::ColourGradient vignette(
             juce::Colours::transparentBlack,
             bounds.getCentreX(), bounds.getCentreY(),
-            juce::Colours::black.withAlpha(0.3f),
+            juce::Colours::black.withAlpha(0.2f * currentIntensity),
             bounds.getX(), bounds.getCentreY(),
             true);
         
@@ -171,87 +216,96 @@ namespace Knobula
         g.fillRect(bounds);
     }
     
-    void NebulaVisualizer::drawClouds(juce::Graphics& g, juce::Rectangle<float> bounds)
+    void NebulaVisualizer::drawNebula(juce::Graphics& g, juce::Rectangle<float> bounds)
     {
-        for (const auto& cloud : clouds)
+        // Draw each cluster as an organic nebula cloud
+        for (int clusterIdx = 0; clusterIdx < NUM_CLUSTERS; ++clusterIdx)
         {
-            float cx = bounds.getX() + cloud.x * bounds.getWidth();
-            float cy = bounds.getY() + cloud.y * bounds.getHeight();
-            float radius = cloud.radius * std::min(bounds.getWidth(), bounds.getHeight());
+            const auto& cluster = clusters[clusterIdx];
+            const auto& clusterParticles = particles[clusterIdx];
             
-            // Soft radial gradient for each cloud
-            juce::ColourGradient cloudGrad(
-                cloud.color.withMultipliedAlpha(currentIntensity),
-                cx, cy,
-                cloud.color.withAlpha(0.0f),
-                cx + radius, cy,
-                true);
+            float clusterX = bounds.getX() + cluster.centerX * bounds.getWidth();
+            float clusterY = bounds.getY() + cluster.centerY * bounds.getHeight();
+            float clusterRadius = cluster.radius * std::min(bounds.getWidth(), bounds.getHeight());
             
-            g.setGradientFill(cloudGrad);
-            g.fillEllipse(cx - radius, cy - radius, radius * 2, radius * 2);
-        }
-    }
-    
-    void NebulaVisualizer::drawStars(juce::Graphics& g, juce::Rectangle<float> bounds)
-    {
-        for (const auto& p : particles)
-        {
-            if (p.brightness < 0.01f)
-                continue;
+            juce::Colour clusterColor = getClusterColor(cluster);
             
-            float x = bounds.getX() + p.x * bounds.getWidth();
-            float y = bounds.getY() + p.y * bounds.getHeight();
-            
-            juce::Colour starColor = getParticleColor(p);
-            float size = p.size * (0.8f + p.brightness * 0.5f);
-            
-            // Draw star core
-            g.setColour(starColor.withAlpha(p.brightness * 0.9f));
-            g.fillEllipse(x - size * 0.5f, y - size * 0.5f, size, size);
-            
-            // Draw soft glow for brighter stars
-            if (p.brightness > 0.5f)
+            // Draw nebula cloud using layered radial gradients for organic look
+            for (int layer = 0; layer < 3; ++layer)
             {
-                float glowSize = size * 2.5f;
-                juce::ColourGradient glow(
-                    starColor.withAlpha(p.brightness * 0.3f),
-                    x, y,
-                    starColor.withAlpha(0.0f),
-                    x + glowSize * 0.5f, y,
+                float layerRadius = clusterRadius * (1.0f - layer * 0.3f);
+                float layerAlpha = (0.15f - layer * 0.04f) * cluster.brightness * currentIntensity * cluster.density;
+                
+                if (layerAlpha < 0.01f)
+                    continue;
+                
+                juce::ColourGradient cloudGrad(
+                    clusterColor.withAlpha(layerAlpha),
+                    clusterX, clusterY,
+                    clusterColor.withAlpha(0.0f),
+                    clusterX + layerRadius, clusterY,
                     true);
                 
-                g.setGradientFill(glow);
-                g.fillEllipse(x - glowSize * 0.5f, y - glowSize * 0.5f, glowSize, glowSize);
+                g.setGradientFill(cloudGrad);
+                g.fillEllipse(clusterX - layerRadius, clusterY - layerRadius, 
+                             layerRadius * 2, layerRadius * 2);
             }
             
-            // Draw cross flare for very bright stars
-            if (p.brightness > 0.8f)
+            // Draw individual particles for detail and sparkle
+            for (const auto& p : clusterParticles)
             {
-                float flareLength = size * 3.0f * p.brightness;
-                g.setColour(starColor.withAlpha(p.brightness * 0.4f));
-                g.drawLine(x - flareLength, y, x + flareLength, y, 0.5f);
-                g.drawLine(x, y - flareLength, x, y + flareLength, 0.5f);
+                if (p.brightness < 0.05f)
+                    continue;
+                
+                float x = clusterX + p.x * clusterRadius;
+                float y = clusterY + p.y * clusterRadius;
+                float size = p.size * p.brightness * 1.5f;
+                
+                if (size < 0.3f)
+                    continue;
+                
+                // Use cluster color with particle brightness
+                juce::Colour particleColor = clusterColor.withAlpha(p.brightness * currentIntensity * 0.6f);
+                g.setColour(particleColor);
+                
+                // Draw as soft circle
+                g.fillEllipse(x - size, y - size, size * 2, size * 2);
+                
+                // Add subtle glow for brighter particles
+                if (p.brightness > 0.4f)
+                {
+                    g.setColour(particleColor.withAlpha(p.brightness * currentIntensity * 0.2f));
+                    g.fillEllipse(x - size * 1.8f, y - size * 1.8f, size * 3.6f, size * 3.6f);
+                }
             }
         }
     }
     
-    juce::Colour NebulaVisualizer::getParticleColor(const StarParticle& particle) const
+    juce::Colour NebulaVisualizer::getClusterColor(const NebulaCluster& cluster) const
     {
-        // Base white with band color tint
-        juce::Colour bandColor = Colors::getBandColor(particle.bandIndex);
+        // Base band color
+        juce::Colour bandColor = Colors::getBandColor(cluster.bandIndex);
         
-        // Blend white with band color based on energy
-        float energyInfluence = 0.3f;
-        if (particle.bandIndex >= 0 && particle.bandIndex < 4)
+        // Blend with neighboring band colors for more organic look
+        juce::Colour neighborColor = Colors::getBandColor((cluster.bandIndex + 1) % 4);
+        float blendAmount = 0.3f + std::sin(cluster.age * juce::MathConstants<float>::twoPi) * 0.2f;
+        blendAmount = juce::jlimit(0.0f, 1.0f, blendAmount);
+        
+        juce::Colour blendedColor = bandColor.interpolatedWith(neighborColor, blendAmount);
+        
+        // Add energy influence
+        float energyInfluence = 0.0f;
+        if (cluster.bandIndex >= 0 && cluster.bandIndex < 4)
         {
-            energyInfluence += smoothedEnergies[particle.bandIndex] * 0.5f;
+            energyInfluence = smoothedEnergies[cluster.bandIndex] * 0.4f;
         }
         
-        return Colors::nebulaStarBase.interpolatedWith(bandColor, energyInfluence);
+        // Brighten based on energy
+        return blendedColor.brighter(energyInfluence);
     }
     
     void NebulaVisualizer::resized()
     {
-        // Particles use normalized coordinates, no update needed
+        // Clusters use normalized coordinates, no update needed
     }
 }

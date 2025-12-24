@@ -7,7 +7,7 @@
 
 #include "HysteresisProcessor.h"
 
-namespace Knobula
+namespace Aetheri
 {
     void HysteresisProcessor::prepare(double newSampleRate, int /*samplesPerBlock*/)
     {
