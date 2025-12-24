@@ -15,7 +15,7 @@ $ProjectDir = $ScriptDir
 $BuildDir = Join-Path $ProjectDir "build"
 
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Knobula Build Script" -ForegroundColor Cyan
+Write-Host "Aetheri Build Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Project Directory: $ProjectDir" -ForegroundColor Gray
 Write-Host "Build Directory: $BuildDir" -ForegroundColor Gray
@@ -86,9 +86,9 @@ try
     Write-Host ""
     
     # Show output location
-    $VST3Path = Join-Path $BuildDir "Knobula_artefacts\$Config\VST3\Knobula.vst3"
-    $AUPath = Join-Path $BuildDir "Knobula_artefacts\$Config\AU\Knobula.component"
-    $StandalonePath = Join-Path $BuildDir "Knobula_artefacts\$Config\Standalone\Knobula.exe"
+    $VST3Path = Join-Path $BuildDir "Aetheri_artefacts\$Config\VST3\Aetheri.vst3"
+    $AUPath = Join-Path $BuildDir "Aetheri_artefacts\$Config\AU\Aetheri.component"
+    $StandalonePath = Join-Path $BuildDir "Aetheri_artefacts\$Config\Standalone\Aetheri.exe"
     
     Write-Host "Output files:" -ForegroundColor Cyan
     if (Test-Path $VST3Path)

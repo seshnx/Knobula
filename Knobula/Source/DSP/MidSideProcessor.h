@@ -1,6 +1,6 @@
 /*
   ==============================================================================
-    Knobula - High-Fidelity Mastering EQ
+    Aetheri - High-Fidelity Mastering EQ
     MidSideProcessor - M/S Encoding/Decoding
   ==============================================================================
 */

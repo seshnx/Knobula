@@ -1,6 +1,6 @@
 /*
   ==============================================================================
-    Knobula - High-Fidelity Mastering EQ
+    Aetheri - High-Fidelity Mastering EQ
     NebulaVisualizer Implementation - Standard JUCE Graphics
     Organic nebula cloud visualization with color blending
   ==============================================================================

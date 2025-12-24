@@ -33,8 +33,8 @@ cmake --build . --config Release
 ```
 
 The AAX plugin will be built at:
-- `build/Knobula_artefacts/Release/AAX/Knobula.aaxplugin` (macOS)
-- `build/Knobula_artefacts/Release/AAX/Knobula.aaxplugin` (Windows)
+- `build/Aetheri_artefacts/Release/AAX/Aetheri.aaxplugin` (macOS)
+- `build/Aetheri_artefacts/Release/AAX/Aetheri.aaxplugin` (Windows)
 
 ## Requirements for AAX Development
 

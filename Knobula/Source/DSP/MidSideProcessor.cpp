@@ -1,6 +1,6 @@
 /*
   ==============================================================================
-    Knobula - High-Fidelity Mastering EQ
+    Aetheri - High-Fidelity Mastering EQ
     MidSideProcessor Implementation
     
     Note: Most functionality is inline in the header for performance.

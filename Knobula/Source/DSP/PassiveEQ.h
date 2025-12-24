@@ -1,6 +1,6 @@
 /*
   ==============================================================================
-    Knobula - High-Fidelity Mastering EQ
+    Aetheri - High-Fidelity Mastering EQ
     PassiveEQ - 4-Band Passive Topology EQ (64-bit Internal Processing)
   ==============================================================================
 */

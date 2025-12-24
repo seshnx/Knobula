@@ -1,6 +1,6 @@
 /*
   ==============================================================================
-    Knobula - High-Fidelity Mastering EQ
+    Aetheri - High-Fidelity Mastering EQ
     NebulaVisualizer - Frequency-Reactive Particle Background
     
     Subtle, low-CPU particle visualization that reacts to EQ band energy.

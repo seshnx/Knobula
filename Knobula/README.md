@@ -1,4 +1,4 @@
-# Knobula - Build Instructions
+# Aetheri - Build Instructions
 
 ## Quick Start
 
@@ -19,9 +19,9 @@ cmake --build build --config Release -j$(nproc)
 
 ### Output Locations
 After building, plugins are located in:
-- `build/Knobula_artefacts/Release/VST3/Knobula.vst3`
-- `build/Knobula_artefacts/Release/AU/Knobula.component` (macOS)
-- `build/Knobula_artefacts/Release/Standalone/Knobula`
+- `build/Aetheri_artefacts/Release/VST3/Aetheri.vst3`
+- `build/Aetheri_artefacts/Release/AU/Aetheri.component` (macOS)
+- `build/Aetheri_artefacts/Release/Standalone/Aetheri`
 
 ## Development
 
@@ -35,13 +35,13 @@ cmake -B build -G "Ninja" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 #### Xcode (macOS)
 ```bash
 cmake -B build -G Xcode
-open build/Knobula.xcodeproj
+open build/Aetheri.xcodeproj
 ```
 
 #### Visual Studio (Windows)
 ```bash
 cmake -B build -G "Visual Studio 17 2022"
-start build/Knobula.sln
+start build/Aetheri.sln
 ```
 
 ### Debug Build

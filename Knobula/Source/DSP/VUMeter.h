@@ -1,6 +1,6 @@
 /*
   ==============================================================================
-    Knobula - High-Fidelity Mastering EQ
+    Aetheri - High-Fidelity Mastering EQ
     VUMeter - Slow-moving RMS Level Meter (VU-style ballistics)
   ==============================================================================
 */

@@ -20,7 +20,7 @@ goto :parse_args
 :end_parse
 
 echo ========================================
-echo Knobula Build Script
+echo Aetheri Build Script
 echo ========================================
 echo Configuration: %CONFIG%
 echo.
@@ -99,9 +99,9 @@ echo ========================================
 echo.
 
 REM Show output location
-set "VST3_PATH=%BUILD_DIR%\Knobula_artefacts\%CONFIG%\VST3\Knobula.vst3"
-set "AU_PATH=%BUILD_DIR%\Knobula_artefacts\%CONFIG%\AU\Knobula.component"
-set "STANDALONE_PATH=%BUILD_DIR%\Knobula_artefacts\%CONFIG%\Standalone\Knobula.exe"
+set "VST3_PATH=%BUILD_DIR%\Aetheri_artefacts\%CONFIG%\VST3\Aetheri.vst3"
+set "AU_PATH=%BUILD_DIR%\Aetheri_artefacts\%CONFIG%\AU\Aetheri.component"
+set "STANDALONE_PATH=%BUILD_DIR%\Aetheri_artefacts\%CONFIG%\Standalone\Aetheri.exe"
 
 echo Output files:
 if exist "%VST3_PATH%" (
