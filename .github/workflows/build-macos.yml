@@ -1,0 +1,62 @@
+name: Build macOS
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  build-macos:
+    runs-on: macos-14  # Apple Silicon runner (M1)
+    defaults:
+      run:
+        working-directory: Knobula
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          brew install cmake ninja
+
+      - name: Configure CMake (Universal Binary)
+        run: |
+          cmake -B build \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="10.15"
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: List build artifacts
+        run: |
+          echo "=== VST3 ==="
+          find build -name "*.vst3" -type d 2>/dev/null || echo "No VST3 found"
+          echo "=== AU ==="
+          find build -name "*.component" -type d 2>/dev/null || echo "No AU found"
+          echo "=== Standalone ==="
+          find build -name "*.app" -type d 2>/dev/null || echo "No app found"
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p artifacts
+          # Copy VST3
+          find build -name "*.vst3" -type d -exec cp -R {} artifacts/ \;
+          # Copy AU
+          find build -name "*.component" -type d -exec cp -R {} artifacts/ \;
+          # Copy Standalone app
+          find build -name "Aetheri.app" -type d -exec cp -R {} artifacts/ \;
+
+      - name: Upload macOS Plugins
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aetheri-macOS-Universal
+          path: artifacts/
+          retention-days: 30
