@@ -34,6 +34,9 @@ AetheriAudioProcessor::AetheriAudioProcessor()
     tubeHarmonicsParam = parameters.getRawParameterValue(Aetheri::ParamIDs::tubeHarmonics);
     transformerSatParam = parameters.getRawParameterValue(Aetheri::ParamIDs::transformerSat);
     hystMixParam = parameters.getRawParameterValue(Aetheri::ParamIDs::hystMix);
+    oversamplingParam = parameters.getRawParameterValue(Aetheri::ParamIDs::oversampling);
+    autoGainCompParam = parameters.getRawParameterValue(Aetheri::ParamIDs::autoGainComp);
+    bypassParam = parameters.getRawParameterValue(Aetheri::ParamIDs::bypass);
     
     // Cache band parameters
     for (int band = 0; band < 4; ++band)
@@ -147,22 +150,34 @@ void AetheriAudioProcessor::changeProgramName(int index, const juce::String& new
 
 void AetheriAudioProcessor::loadPreset(int index)
 {
+    isLoadingPreset = true;
+
     int numFactory = Aetheri::PresetManager::getNumFactoryPresets();
-    
+
     if (index < numFactory)
     {
-        // Load factory preset
+        // Apply factory preset, then force atomic state update
         Aetheri::PresetManager::applyPreset(parameters, index);
+
+        // Force atomic state sync by copying and replacing
+        // This ensures all parameter changes are applied together
+        auto state = parameters.copyState();
+        parameters.replaceState(state);
     }
     else
     {
-        // Load user preset
+        // Load user preset (already atomic via replaceState)
         int userIndex = index - numFactory;
         if (userIndex >= 0 && userIndex < static_cast<int>(userPresets.size()))
         {
             parameters.replaceState(userPresets[userIndex]);
         }
     }
+
+    isLoadingPreset = false;
+
+    // Notify host that state has changed
+    updateHostDisplay();
 }
 
 void AetheriAudioProcessor::saveCurrentAsPreset(const juce::String& name)
@@ -323,7 +338,15 @@ void AetheriAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBlock
     {
         oversampler->reset();
     }
-    
+
+    // Report latency to host (oversampling introduces latency)
+    int reportedLatency = 0;
+    if (oversampler != nullptr)
+    {
+        reportedLatency = static_cast<int>(oversampler->getLatencyInSamples());
+    }
+    setLatencySamples(reportedLatency);
+
     // Prepare all DSP processors
     // Note: Oversampling is handled by the oversampler class, which upsamples before processing
     // and downsamples after. The DSP processors work at the base rate.
@@ -536,6 +559,15 @@ void AetheriAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     if (buffer.getNumChannels() < 2)
         return;
+
+    // Check bypass state - pass audio through unprocessed
+    if (bypassParam != nullptr && bypassParam->load() > 0.5f)
+    {
+        // Still update meters for visual feedback even when bypassed
+        inputVU.pushSamples(buffer);
+        outputVU.pushSamples(buffer);
+        return;
+    }
 
     // Update DSP parameters
     updateDSPFromParameters();

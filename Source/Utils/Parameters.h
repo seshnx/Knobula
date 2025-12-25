@@ -48,6 +48,7 @@ namespace Aetheri
         // Processing Options
         inline const juce::String oversampling      { "oversampling" };  // 0=1x, 1=2x, 2=4x
         inline const juce::String autoGainComp      { "autoGainComp" };  // Auto-gain compensation
+        inline const juce::String bypass            { "bypass" };        // Plugin bypass
     }
     
     // Band frequency defaults (Hz)

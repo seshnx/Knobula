@@ -98,6 +98,10 @@ private:
     // Auto-gain compensation
     juce::ToggleButton autoGainButton;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> autoGainAttachment;
+
+    // Bypass
+    juce::ToggleButton bypassButton;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> bypassAttachment;
     
     // Parameter attachments for global controls
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> inputGainAttachment;
@@ -138,7 +142,7 @@ private:
     static constexpr int MIN_HEIGHT = 520;  // Scaled proportionally
     
     // Version number - increment by 0.01 for each fix
-    static constexpr const char* PLUGIN_VERSION = "v00.13";
+    static constexpr const char* PLUGIN_VERSION = "v00.14";
     
     // Aspect ratio for locked resizing
     static constexpr double ASPECT_RATIO = static_cast<double>(DEFAULT_WIDTH) / DEFAULT_HEIGHT;

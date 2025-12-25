@@ -168,7 +168,12 @@ namespace Aetheri
             juce::ParameterID(ParamIDs::autoGainComp, 1),
             "Auto Gain Compensation",
             false));  // Default off
-        
+
+        params.push_back(std::make_unique<juce::AudioParameterBool>(
+            juce::ParameterID(ParamIDs::bypass, 1),
+            "Bypass",
+            false));  // Default off
+
         return { params.begin(), params.end() };
     }
 }

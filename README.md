@@ -1,4 +1,19 @@
-# Aetheri - Build Instructions
+# Aetheri - High-Fidelity Dual-Channel Mastering EQ
+
+A professional mastering EQ plugin with analog character, built with JUCE 8.
+
+## Features
+
+- **4-Band Passive EQ** - Musical Q values with Bell/Shelf curves on LF/HF bands
+- **Hysteresis Stage** - Tube harmonics and transformer saturation
+- **Mid/Side Processing** - L/R or M/S stereo modes with channel linking
+- **Oversampling** - 1x, 2x, 4x options for reduced aliasing
+- **Bypass** - Full plugin bypass with host integration
+- **Latency Compensation** - Automatic latency reporting for oversampling
+- **A/B Comparison** - Quick toggle between two settings
+- **Factory Presets** - 7 curated presets for common mastering tasks
+- **VU Metering** - Input/Output with RMS, Peak, VU, and LUFS modes
+- **Phase Correlation Meter** - Real-time stereo phase visualization
 
 ## Quick Start
 
@@ -22,6 +37,15 @@ After building, plugins are located in:
 - `build/Aetheri_artefacts/Release/VST3/Aetheri.vst3`
 - `build/Aetheri_artefacts/Release/AU/Aetheri.component` (macOS)
 - `build/Aetheri_artefacts/Release/Standalone/Aetheri`
+
+## CI/CD
+
+Multi-platform builds run automatically via GitHub Actions:
+- **macOS**: Universal binary (arm64 + x86_64)
+- **Windows**: x86_64
+- **Linux**: x86_64
+
+Artifacts include a universal VST3 bundle containing all platform binaries.
 
 ## Development
 

@@ -5,6 +5,25 @@ All notable changes to the Aetheri High-Fidelity Dual-Channel Mastering EQ plugi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v00.14] - 2024-12-24
+
+### Added
+- **Latency Reporting**: Plugin now reports oversampling latency to host for proper delay compensation
+- **Bypass Parameter**: Full bypass functionality with UI toggle button
+- **Multi-Platform CI**: GitHub Actions workflow builds for Windows, macOS (Universal), and Linux
+- **Universal VST3 Bundle**: CI assembles cross-platform VST3 bundle with all platform binaries
+
+### Fixed
+- **Preset Loading**: Fixed race condition where timer would reset ComboBox selection before onChange fired
+- **Preset Atomicity**: Added `isLoadingPreset` flag to prevent channel linking interference during preset load
+- **State Sync**: Factory presets now force atomic state update via replaceState after applying
+
+## [v00.13] - 2024-12-XX
+
+### Added
+- Multi-platform CI/CD workflow for automated builds
+- Build artifacts for Windows, macOS, and Linux
+
 ## [v00.12] - 2024-12-XX
 
 ### Added
@@ -176,6 +195,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version History Summary
 
+- **v00.14**: Latency reporting, bypass, preset fixes, multi-platform CI
+- **v00.13**: Multi-platform CI/CD workflow
 - **v00.12**: Version display, Mac build support, stability improvements
 - **v00.11**: Auto-gain compensation
 - **v00.10**: Oversampling options

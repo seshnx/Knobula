@@ -122,6 +122,7 @@ private:
     std::atomic<float>* hystMixParam = nullptr;
     std::atomic<float>* oversamplingParam = nullptr;
     std::atomic<float>* autoGainCompParam = nullptr;
+    std::atomic<float>* bypassParam = nullptr;
     
     // Band parameters [band][channel]
     std::array<std::array<std::atomic<float>*, 2>, 4> bandGainParams;
@@ -160,6 +161,11 @@ private:
     // A/B Comparison methods (private helpers)
     void saveCurrentToAB();
     void loadABState(bool loadA);
+
+    // Flag to prevent parameter linking during preset loading
+    bool isLoadingPreset = false;
+public:
+    bool getIsLoadingPreset() const { return isLoadingPreset; }
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(AetheriAudioProcessor)
 };

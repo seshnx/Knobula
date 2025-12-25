@@ -221,8 +221,8 @@ void AetheriAudioProcessorEditor::setupPresetSelector()
         int selected = presetSelector.getSelectedId() - 1;  // ComboBox IDs start at 1
         if (selected >= 0 && selected < audioProcessor.getNumPrograms())
         {
+            // setCurrentProgram already calls loadPreset internally
             audioProcessor.setCurrentProgram(selected);
-            audioProcessor.loadPreset(selected);  // Explicitly load the preset
         }
     };
     addAndMakeVisible(presetSelector);
@@ -349,9 +349,16 @@ void AetheriAudioProcessorEditor::setupAutoGainControls()
     autoGainButton.setButtonText("AUTO GAIN");
     autoGainButton.setTooltip("Auto Gain Compensation: Maintains perceived loudness when adjusting EQ");
     addAndMakeVisible(autoGainButton);
-    
+
     autoGainAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
         audioProcessor.getParameters(), Aetheri::ParamIDs::autoGainComp, autoGainButton);
+
+    bypassButton.setButtonText("BYPASS");
+    bypassButton.setTooltip("Bypass: Pass audio through unprocessed");
+    addAndMakeVisible(bypassButton);
+
+    bypassAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
+        audioProcessor.getParameters(), Aetheri::ParamIDs::bypass, bypassButton);
 }
 
 void AetheriAudioProcessorEditor::updatePresetList()
@@ -557,10 +564,11 @@ void AetheriAudioProcessorEditor::resized()
     phaseCorrMeter.setBounds(stereoArea.removeFromTop(static_cast<int>(40 * scale)).reduced(static_cast<int>(2 * scale)));
     stereoArea.removeFromTop(static_cast<int>(3 * scale));
     
-    // Oversampling and Auto-gain controls
+    // Oversampling, Auto-gain, and Bypass controls
     oversamplingSelector.setBounds(stereoArea.removeFromTop(static_cast<int>(24 * scale)).reduced(static_cast<int>(2 * scale)));
     autoGainButton.setBounds(stereoArea.removeFromTop(static_cast<int>(24 * scale)).reduced(static_cast<int>(2 * scale)));
-    
+    bypassButton.setBounds(stereoArea.removeFromTop(static_cast<int>(24 * scale)).reduced(static_cast<int>(2 * scale)));
+
     centerArea.removeFromLeft(static_cast<int>(5 * scale));
     
     rightChannelStrip.setBounds(centerArea);
@@ -588,16 +596,14 @@ void AetheriAudioProcessorEditor::timerCallback()
     updateNebulaEnergies();
     updateTubeGlow();
     updateChannelLabels();
-    
+
     // Update phase correlation meter
     phaseCorrMeter.updateCorrelation(audioProcessor.getPhaseCorrelation());
-    
-    // Update preset selector if program changed
-    int currentProgram = audioProcessor.getCurrentProgram();
-    if (presetSelector.getSelectedId() != currentProgram + 1)
-    {
-        presetSelector.setSelectedId(currentProgram + 1, juce::dontSendNotification);
-    }
+
+    // Note: We don't sync the preset selector here anymore.
+    // The ComboBox onChange handles setting the program, and the host
+    // can change programs via setCurrentProgram which the ComboBox
+    // doesn't need to track in real-time (it would cause race conditions).
 }
 
 void AetheriAudioProcessorEditor::updateVUMeters()
@@ -713,7 +719,11 @@ void AetheriAudioProcessorEditor::valueTreePropertyChanged(juce::ValueTree& /*tr
     // Ignore if we're currently linking parameters (prevent feedback loop)
     if (isLinkingParameters)
         return;
-    
+
+    // Ignore if a preset is being loaded (prevent interference)
+    if (audioProcessor.getIsLoadingPreset())
+        return;
+
     // Never link in M/S mode
     bool isMidSide = audioProcessor.getParameters().getRawParameterValue(
         Aetheri::ParamIDs::stereoMode)->load() > 0.5f;
